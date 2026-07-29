@@ -1,0 +1,153 @@
+
+# Africa Admin-1 Conflict Events and Population Exposure Analysis (2000–2026) Using ACLED Data
+
+# Packages and Data Preparation
+```{r}
+# Packages
+library(sf)
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(terra)
+
+# Setup Paths
+sf_use_s2(FALSE)
+path <- "~Ebola Outbreak DRC/Conflict Data and Script"
+output_path <- "~Ebola Outbreak DRC/Conflict Data and Script"
+dir.create(output_path, showWarnings = FALSE)
+
+# Africa Boundaries
+africa <- st_read(file.path(path, "Africa_admin1.gpkg"), quiet = TRUE) %>%
+  st_make_valid() %>%
+  select(shapeGroup, shapeName)
+
+# Load and clean ACLED data
+conflict_sf <- read_excel(file.path(path, "Africa_conflict_ACLED.xlsx")) %>%
+  mutate(
+    date = as.Date(WEEK), 
+    year = year(date)
+  ) %>%
+  st_as_sf(coords = c("CENTROID_LONGITUDE", "CENTROID_LATITUDE"), crs = 4326) %>%
+  st_transform(st_crs(africa)) %>%
+  st_join(africa, left = FALSE)
+
+# Time Periods
+periods <- list(
+  "2000-2010" = 2000:2010,
+  "2011-2021" = 2011:2021,
+  "2022-2026" = 2022:2026,
+  "2000-2026" = 2000:2026
+)
+```
+
+# Conflict Events Analysis
+```{r}
+# Process each period for Conflict Events
+for (p_name in names(periods)) {
+  years_vector <- periods[[p_name]]
+  
+  # Summarize Mean Annual Events
+  map_data <- conflict_sf %>%
+    filter(year %in% years_vector) %>%
+    st_drop_geometry() %>%
+    group_by(shapeGroup, shapeName) %>%
+    summarise(
+      mean_annual_events = sum(coalesce(EVENTS, 0), na.rm = TRUE) / length(years_vector),
+      .groups = "drop"
+    ) %>%
+    right_join(africa, by = c("shapeGroup", "shapeName")) %>%
+    st_as_sf() %>%
+    mutate(mean_annual_events = replace_na(mean_annual_events, 0))
+  
+  # Plot Map
+  p <- ggplot(map_data) +
+    geom_sf(aes(fill = mean_annual_events), color = "grey80", linewidth = 0.05) +
+    scale_fill_viridis_c(
+      name = "Mean annual\nconflict events",
+      na.value = "grey95",
+      breaks = scales::pretty_breaks(5)
+    ) +
+    labs(title = paste("Conflict Events:", p_name)) +
+    coord_sf(expand = FALSE) +
+    theme_void() +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
+      legend.position = "right",
+      legend.title = element_text(face = "bold")
+    )
+  print(p)
+  
+  # Export Raster
+  template <- rast(ext(map_data), resolution = 0.05, crs = st_crs(map_data)$wkt)
+  event_raster <- rasterize(
+    vect(map_data), 
+    template, 
+    field = "mean_annual_events", 
+    fun = "mean"
+  )
+  
+  writeRaster(
+    event_raster,
+    file.path(output_path, paste0("Conflict_", p_name, ".tif")),
+    overwrite = TRUE
+  )
+}
+```
+
+# Population Exposure Analysis
+```{r}
+# Process each period for Population Exposure
+for (p_name in names(periods)) {
+  years_vector <- periods[[p_name]]
+  
+  # Summarize Mean Annual Population Exposure
+  map_data <- conflict_sf %>%
+    filter(year %in% years_vector) %>%
+    st_drop_geometry() %>%
+    group_by(shapeGroup, shapeName) %>%
+    summarise(
+      mean_annual_exposure = sum(coalesce(POPULATION_EXPOSURE, 0), na.rm = TRUE) / length(years_vector),
+      .groups = "drop"
+    ) %>%
+    right_join(africa, by = c("shapeGroup", "shapeName")) %>%
+    st_as_sf() %>%
+    mutate(mean_annual_exposure = replace_na(mean_annual_exposure, 0))
+  
+  # Plot Map
+  p <- ggplot(map_data) +
+    geom_sf(aes(fill = mean_annual_exposure), color = "grey80", linewidth = 0.05) +
+    scale_fill_viridis_c(
+      name = "Mean annual\npopulation exposure",
+      na.value = "grey95",
+      breaks = scales::pretty_breaks(5)
+    ) +
+    labs(title = paste("Population Exposure:", p_name)) +
+    coord_sf(expand = FALSE) +
+    theme_void() +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
+      legend.position = "right",
+      legend.title = element_text(face = "bold")
+    )
+  print(p)
+  
+  # Export Raster
+  template <- rast(ext(map_data), resolution = 0.05, crs = st_crs(map_data)$wkt)
+  exposure_raster <- rasterize(
+    vect(map_data), 
+    template, 
+    field = "mean_annual_exposure", 
+    fun = "mean"
+  )
+  
+  writeRaster(
+    exposure_raster,
+    file.path(output_path, paste0("ConflictExposure_", p_name, ".tif")),
+    overwrite = TRUE
+  )
+}
+```
+
+
+
+
