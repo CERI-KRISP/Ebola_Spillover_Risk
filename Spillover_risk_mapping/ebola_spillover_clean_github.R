@@ -6,7 +6,7 @@ library(rnaturalearth)
 library(ggplot2)
 
 # -----------------------------
-# 1. Loading area boundaries
+# Loading area boundaries
 # -----------------------------
 
 #Whole Africa
@@ -210,13 +210,12 @@ plot(Africa_map1,add=T,border='black',col=NA,lwd=0.1)
 plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
 plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
 
-quartz.save(file = "FIG2_updatedebolaniche_comparison_v3.pdf", type = "pdf")
+#quartz.save(file = "FIG2_updatedebolaniche_comparison_v3.pdf", type = "pdf")
 
 
 # -----------------------------
-# 3. Loading covariates rasters
+# Loading covariates rasters for spillover model
 # -----------------------------
-pop <- rast("data/gpw_v4_population_density_rev11_2015_30_sec.tif")        # population density
 built <- rast("data/GHS_BUILT_S_E2025_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
 mining <- rast("data/distance_to_nearest_mining_site_africa_0p05deg_osm_plus_non_osm.tif")
 conflict_exposure<-rast("data/ConflictEvents_MeanAnnual_2000_2026.tif")
@@ -237,61 +236,8 @@ forest_loss_temporal<-rast("data/Africa_merged_forest_loss_medium_res_temporal.t
 bushmeat<-rast("data/bushmeat_activity_Binomial_predictions.tif")
 
 # -----------------------------
-# 4. Temporal visualization of conflict exposure
-# -----------------------------
-par(mfrow = c(2, 4)) # Create a 2 x 2 plotting matrix
-par(mar = c(0, 0, 0, 0)) # Set the margin on all sides to 2
-
-plot(conflict_exposure, main = "Conflict Events (2000-2026 mean)",
-     col = MetBrewer::met.brewer("Gauguin", n = 256, type = "continuous", direction = -1)
-)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-plot(conflict_exposure2, main = "Conflict Events (2000-2010 mean)",
-     col = MetBrewer::met.brewer("Gauguin", n = 256, type = "continuous", direction = -1)
-)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-plot(conflict_exposure3, main = "Conflict Events (2011-2021 mean)",
-     col = MetBrewer::met.brewer("Gauguin", n = 256, type = "continuous", direction = -1)
-)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-plot(conflict_exposure4, main = "Conflict Events (2022-2026 mean)",
-     col = MetBrewer::met.brewer("Gauguin", n = 256, type = "continuous", direction = -1)
-)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-plot(conflict_exposure1, main = "Conflict Population Exposure (2014-2026 mean)",
-     col = MetBrewer::met.brewer("Degas", n = 256, type = "continuous", direction = -1)
-)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-plot(conflict_exposure1a, main = "Conflict Population Exposure (2014-2021 mean)",
-     col = MetBrewer::met.brewer("Degas", n = 256, type = "continuous", direction = -1)
-)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-plot(conflict_exposure1b, main = "Conflict Population Exposure (2022-2026 mean)",
-     col = MetBrewer::met.brewer("Degas", n = 256, type = "continuous", direction = -1)
-)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-#quartz.save(file = "conflicts_supp_fig.pdf", type = "pdf")
-
-
-# -----------------------------
 # 5. Crop covariates to bounding box 
 # -----------------------------
-
-pop <- mask(crop(pop, CentralAfrica_vect),CentralAfrica_vect)       # population density
-pop <- project(pop, crs(CentralAfrica_vect))
 built <- mask(crop(built, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
 mining <- mask(crop(mining, CentralAfrica_vect),CentralAfrica_vect)
 conflict_exposure<-mask(crop(conflict_exposure, CentralAfrica_vect),CentralAfrica_vect)
@@ -301,324 +247,21 @@ ebola_niche<-mask(crop(ebola_niche, CentralAfrica_vect),CentralAfrica_vect)
 ebola_niche_2016<-mask(crop(ebola_niche_2016, CentralAfrica_vect),CentralAfrica_vect)
 forest_loss<-mask(crop(forest_loss, CentralAfrica_vect),CentralAfrica_vect)
 forest_loss_temporal<-mask(crop(forest_loss_temporal, CentralAfrica_vect),CentralAfrica_vect)
-forest_loss_temporal <- project(forest_loss_temporal, ebola_niche)
-pop <- project(pop, ebola_niche)
-built <- resample(built, ebola_niche, method = "bilinear")
-mining <- resample(mining, ebola_niche, method = "bilinear")
 
 #turn distance to mining sites into mining proximity (0-1)
 k <- 10
 mining_risk <- exp(-mining / k)
 
 forest_loss <- project(forest_loss, ebola_niche)
+forest_loss_temporal <- project(forest_loss_temporal, ebola_niche)
 conflict_exposure <- project(conflict_exposure, ebola_niche)
 built <- project(built, ebola_niche)
 mining_risk <- project(mining_risk, ebola_niche)
 bushmeat <- project(bushmeat, ebola_niche)
 
 
-
 # -----------------------------
-# 6. Plot forest loss temporally every 5 years 
-# -----------------------------
-
-par(mfrow = c(3, 2)) # Create a 2 x 2 plotting matrix
-par(mar = c(0, 0, 0, 0)) # Set the margin on all sides to 2
-
-plot(forest_loss_temporal[[1]],   range = c(0, 1),main="Loss in 2001-2005",
-     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
-)
-plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-plot(forest_loss_temporal[[2]],   range = c(0, 1),main="Loss in 2006-2010",
-     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
-)
-plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-plot(forest_loss_temporal[[3]],   range = c(0, 1),main="Loss in 2011-2015",
-     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
-)
-plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-plot(forest_loss_temporal[[4]],   range = c(0, 1),main="Loss in 2016-2020",
-     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
-)
-plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-plot(forest_loss_temporal[[5]],     range = c(0, 1),main="Loss in 2021-2025",
-     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
-)
-plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-#quartz.save(file = "forest_loss_temporal_every_5years.pdf", type = "pdf")
-
-
-# Mean forest-loss intensity across the study area
-forest_loss_summary <- global(
-  forest_loss_temporal,
-  fun = "mean",
-  na.rm = TRUE
-)
-
-forest_loss_summary
-
-forest_loss_summary2 <- global(
-  forest_loss_temporal,
-  fun = "mean",
-  na.rm = TRUE
-)
-
-forest_loss_summary2$percentage <- 
-  forest_loss_summary2$mean * 100
-
-
-
-# Calculate area of each raster cell in km²
-cell_area <- terra::cellSize(
-  forest_loss_temporal[[1]],
-  unit = "km"
-)
-
-forest_loss_area <- forest_loss_temporal * cell_area
-
-forest_loss_area_summary <- terra::global(
-  forest_loss_area,
-  fun = "sum",
-  na.rm = TRUE
-)
-
-forest_loss_area_summary
-
-forest_loss_area_summary$period <- names(forest_loss_temporal)
-
-forest_loss_area_summary
-
-ebola_mask <- ifel(
-  ebola_niche >= 0.7,
-  1,
-  NA
-)
-
-forest_loss_ebola <- mask(
-  forest_loss_temporal,
-  ebola_mask
-)
-
-
-
-forest_loss_summary_ebola <- terra::global(
-  forest_loss_ebola,
-  fun = "sum",
-  na.rm = TRUE
-)
-
-forest_loss_summary_ebola$period <- names(forest_loss_ebola)
-
-
-ggplot()+
-  theme_bw()+
-  geom_line(data=forest_loss_area_summary,aes(period,sum,colour='Study area'),group=1,size=1)+
-  geom_point(data=forest_loss_area_summary,aes(period,sum,colour='Study area'),size=3)+
-  geom_line(data=forest_loss_summary_ebola,aes(period,sum*100,colour='Ebola niche'),group=2,size=1)+
-  geom_point(data=forest_loss_summary_ebola,aes(period,sum*100,colour='Ebola niche'),size=3)+
-  scale_colour_manual(values=c('palegreen4','darkseagreen3'))+
-  theme(legend.position = "bottom", legend.title = element_blank())+
-  scale_y_continuous(labels=scales::comma,name="Area affected by deforestation (km²)",
-                     sec.axis = sec_axis(~ . / 100,name='Ebola niche only (suitability >= 0.7)'))+
-  xlab("Five-year period")
-#quartz.save(file = "forest_loss_temporal_summary_area_every_5years.pdf", type = "pdf")
-
-# -----------------------------
-# 7. plot built-up environment temporally each 5 years
-# -----------------------------
-
-built_2000 <- rast("data/GHS_BUILT_S_E2000_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
-built_2000 <- mask(crop(built_2000, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
-
-built_2005 <- rast("data/GHS_BUILT_S_E2005_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
-built_2005 <- mask(crop(built_2005, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
-
-built_2010 <- rast("data/GHS_BUILT_S_E2010_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
-built_2010 <- mask(crop(built_2010, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
-
-
-built_2015 <- rast("data/GHS_BUILT_S_E2015_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
-built_2015 <- mask(crop(built_2015, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
-
-
-built_2020 <- rast("data/GHS_BUILT_S_E2020_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
-built_2020 <- mask(crop(built_2020, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
-
-built_2025 <- rast("data/GHS_BUILT_S_E2025_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
-built_2025 <- mask(crop(built_2025, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
-
-par(mfrow = c(3, 2)) # Create a 2 x 2 plotting matrix
-par(mar = c(0, 0, 0, 0)) # Set the margin on all sides to 2
-
-
-plot(log1p(built_2000), main = "Built-up intensity (log) (2000)",
-     col = hcl.colors(100, "BuPu")
-)
-plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-plot(log1p(built_2005), main = "Built-up intensity (log) (2005)",
-     col = hcl.colors(100, "BuPu")
-)
-plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-plot(log1p(built_2010), main = "Built-up intensity (log) (2010)",
-     col = hcl.colors(100, "BuPu")
-)
-plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-plot(log1p(built_2015), main = "Built-up intensity (log) (2015)",
-     col = hcl.colors(100, "BuPu")
-)
-plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-plot(log1p(built_2020), main = "Built-up intensity (log) (2020)",
-     col = hcl.colors(100, "BuPu")
-)
-plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-plot(log1p(built_2025), main = "Built-up intensity (log) (2025)",
-     col = hcl.colors(100, "BuPu")
-)
-plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-quartz.save(file = "built-up_summary_area_every_5years.pdf", type = "pdf")
-
-
-built_up_change <- c(
-  built_2005 - built_2000,  # 2000–2005
-  built_2010 - built_2005,  # 2005–2010
-  built_2015 - built_2010,  # 2010–2015
-  built_2020 - built_2015,  # 2015–2020
-  built_2025 - built_2020   # 2020–2025
-)
-
-names(built_up_change) <- c(
-  "2000_2005",
-  "2005_2010",
-  "2010_2015",
-  "2015_2020",
-  "2020_2025"
-)
-
-built_up_change_km2 <- built_up_change / 1e6
-
-built_up_area_summary <- terra::global(
-  built_up_change_km2,
-  fun = "sum",
-  na.rm = TRUE
-)
-
-built_up_area_summary$period <- names(built_up_change_km2)
-
-built_up_area_summary
-
-built_up_change_km2 <- project(built_up_change_km2, ebola_niche,  method = "sum")
-
-built_up_ebola <- mask(
-  built_up_change_km2,
-  ebola_mask
-)
-
-built_up_summary_ebola <- terra::global(
-  built_up_ebola,
-  fun = "sum",
-  na.rm = TRUE
-)
-
-built_up_summary_ebola$period <- names(built_up_ebola)
-
-
-ggplot()+
-  theme_bw()+
-  geom_line(data=built_up_area_summary,aes(period,sum,group=1,colour='Study area'),size=1)+
-  geom_point(data=built_up_area_summary,aes(period,sum,colour='Study area'),size=3)+
-  geom_line(data=built_up_summary_ebola,aes(period,sum*10,colour='Ebola niche'),group=2,size=1)+
-  geom_point(data=built_up_summary_ebola,aes(period,sum*10,colour='Ebola niche'),size=3)+
-  scale_colour_manual(values=c('purple4','plum4'))+
-  theme(legend.position = "bottom", legend.title = element_blank())+
-  scale_y_continuous(labels=scales::comma,name="New built-up area (km²)",
-                     sec.axis = sec_axis(~ . / 10,name='Ebola niche only (suitability >= 0.7)'))+
-  xlab("Five-year period")
-
-#quartz.save(file = "built-up-change_summary_area_every_5years.pdf", type = "pdf")
-
-
-
-# -----------------------------
-# 8. Figure 3 - plot covariates of spillover model
-# -----------------------------
-par(mfrow = c(2, 3)) # Create a 2 x 2 plotting matrix
-par(mar = c(0, 0, 0, 0)) # Set the margin on all sides to 2
-
-
-plot(ebola_niche, main = "Ebola ecological niche",
-     col = MetBrewer::met.brewer("Demuth", n = 256, type = "continuous", direction = -1)
-)
-plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-plot(log1p(built), main = "Built-up intensity (log)",
-     col = hcl.colors(100, "BuPu")
-)
-plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-plot(forest_loss, main = "Forest loss",
-     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
-)
-plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-plot(bushmeat, main = "Bushmeat activity",
-     col = MetBrewer::met.brewer("Tam", n = 256, type = "continuous", direction = -1)
-)
-plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-
-plot(mining_risk, main = "Mining proximity",
-     col = MetBrewer::met.brewer("Paquin", n = 256, type = "continuous", direction = -1)
-)
-plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-
-plot(conflict_exposure, main = "Conflict exposure",
-     col = MetBrewer::met.brewer("Troy", n = 256, type = "continuous", direction = -1)
-)
-plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
-plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
-
-
-#quartz.save(file = "covariates_maps_FIG3_updatedebolaniche.pdf", type = "pdf")
-
-
-
-# -----------------------------
-# 9. Compute spillover risk and evaluate performance of scenarios
+# Compute spillover risk and evaluate performance of scenarios
 # -----------------------------
 
 #normalizing built and conflict layers - others already normalised
@@ -629,8 +272,6 @@ built_min <- global(built, "min", na.rm = TRUE)[1,1]
 built_max <- global(built, "max", na.rm = TRUE)[1,1]
 
 built <- (built - built_min) / (built_max - built_min)
-
-
 
 
 conflict_min <- global(conflict_exposure, "min", na.rm = TRUE)[1,1]
@@ -1670,8 +1311,362 @@ points(spillover_events_cases_after2022,add=T,col="firebrick2",pch=1,cex=2,lwd=1
 #quartz.save(file = "spillover_risk_composite_maps_final_selection1.pdf", type = "pdf")
 
 
+
 # -----------------------------
-# 10. Figure 5 - Comput continental risk maps - reload rasters
+# Temporal visualization of conflict exposure
+# -----------------------------
+par(mfrow = c(2, 4)) # Create a 2 x 2 plotting matrix
+par(mar = c(0, 0, 0, 0)) # Set the margin on all sides to 2
+
+plot(conflict_exposure, main = "Conflict Events (2000-2026 mean)",
+     col = MetBrewer::met.brewer("Gauguin", n = 256, type = "continuous", direction = -1)
+)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+plot(conflict_exposure2, main = "Conflict Events (2000-2010 mean)",
+     col = MetBrewer::met.brewer("Gauguin", n = 256, type = "continuous", direction = -1)
+)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+plot(conflict_exposure3, main = "Conflict Events (2011-2021 mean)",
+     col = MetBrewer::met.brewer("Gauguin", n = 256, type = "continuous", direction = -1)
+)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+plot(conflict_exposure4, main = "Conflict Events (2022-2026 mean)",
+     col = MetBrewer::met.brewer("Gauguin", n = 256, type = "continuous", direction = -1)
+)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+plot(conflict_exposure1, main = "Conflict Population Exposure (2014-2026 mean)",
+     col = MetBrewer::met.brewer("Degas", n = 256, type = "continuous", direction = -1)
+)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+plot(conflict_exposure1a, main = "Conflict Population Exposure (2014-2021 mean)",
+     col = MetBrewer::met.brewer("Degas", n = 256, type = "continuous", direction = -1)
+)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+plot(conflict_exposure1b, main = "Conflict Population Exposure (2022-2026 mean)",
+     col = MetBrewer::met.brewer("Degas", n = 256, type = "continuous", direction = -1)
+)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+#quartz.save(file = "conflicts_supp_fig.pdf", type = "pdf")
+
+
+
+# -----------------------------
+# Plot forest loss temporally every 5 years 
+# -----------------------------
+
+par(mfrow = c(3, 2)) # Create a 2 x 2 plotting matrix
+par(mar = c(0, 0, 0, 0)) # Set the margin on all sides to 2
+
+plot(forest_loss_temporal[[1]],   range = c(0, 1),main="Loss in 2001-2005",
+     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
+)
+plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+plot(forest_loss_temporal[[2]],   range = c(0, 1),main="Loss in 2006-2010",
+     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
+)
+plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+plot(forest_loss_temporal[[3]],   range = c(0, 1),main="Loss in 2011-2015",
+     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
+)
+plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+plot(forest_loss_temporal[[4]],   range = c(0, 1),main="Loss in 2016-2020",
+     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
+)
+plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+plot(forest_loss_temporal[[5]],     range = c(0, 1),main="Loss in 2021-2025",
+     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
+)
+plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+#quartz.save(file = "forest_loss_temporal_every_5years.pdf", type = "pdf")
+
+
+# Mean forest-loss intensity across the study area
+forest_loss_summary <- global(
+  forest_loss_temporal,
+  fun = "mean",
+  na.rm = TRUE
+)
+
+forest_loss_summary
+
+forest_loss_summary2 <- global(
+  forest_loss_temporal,
+  fun = "mean",
+  na.rm = TRUE
+)
+
+forest_loss_summary2$percentage <- 
+  forest_loss_summary2$mean * 100
+
+
+
+# Calculate area of each raster cell in km²
+cell_area <- terra::cellSize(
+  forest_loss_temporal[[1]],
+  unit = "km"
+)
+
+forest_loss_area <- forest_loss_temporal * cell_area
+
+forest_loss_area_summary <- terra::global(
+  forest_loss_area,
+  fun = "sum",
+  na.rm = TRUE
+)
+
+forest_loss_area_summary
+
+forest_loss_area_summary$period <- names(forest_loss_temporal)
+
+forest_loss_area_summary
+
+ebola_mask <- ifel(
+  ebola_niche >= 0.7,
+  1,
+  NA
+)
+
+forest_loss_ebola <- mask(
+  forest_loss_temporal,
+  ebola_mask
+)
+
+
+
+forest_loss_summary_ebola <- terra::global(
+  forest_loss_ebola,
+  fun = "sum",
+  na.rm = TRUE
+)
+
+forest_loss_summary_ebola$period <- names(forest_loss_ebola)
+
+
+ggplot()+
+  theme_bw()+
+  geom_line(data=forest_loss_area_summary,aes(period,sum,colour='Study area'),group=1,size=1)+
+  geom_point(data=forest_loss_area_summary,aes(period,sum,colour='Study area'),size=3)+
+  geom_line(data=forest_loss_summary_ebola,aes(period,sum*100,colour='Ebola niche'),group=2,size=1)+
+  geom_point(data=forest_loss_summary_ebola,aes(period,sum*100,colour='Ebola niche'),size=3)+
+  scale_colour_manual(values=c('palegreen4','darkseagreen3'))+
+  theme(legend.position = "bottom", legend.title = element_blank())+
+  scale_y_continuous(labels=scales::comma,name="Area affected by deforestation (km²)",
+                     sec.axis = sec_axis(~ . / 100,name='Ebola niche only (suitability >= 0.7)'))+
+  xlab("Five-year period")
+#quartz.save(file = "forest_loss_temporal_summary_area_every_5years.pdf", type = "pdf")
+
+# -----------------------------
+# plot built-up environment temporally each 5 years
+# -----------------------------
+
+built_2000 <- rast("data/GHS_BUILT_S_E2000_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
+built_2000 <- mask(crop(built_2000, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
+
+built_2005 <- rast("data/GHS_BUILT_S_E2005_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
+built_2005 <- mask(crop(built_2005, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
+
+built_2010 <- rast("data/GHS_BUILT_S_E2010_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
+built_2010 <- mask(crop(built_2010, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
+
+
+built_2015 <- rast("data/GHS_BUILT_S_E2015_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
+built_2015 <- mask(crop(built_2015, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
+
+
+built_2020 <- rast("data/GHS_BUILT_S_E2020_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
+built_2020 <- mask(crop(built_2020, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
+
+built_2025 <- rast("data/GHS_BUILT_S_E2025_GLOBE_R2023A_4326_30ss_V1_0.tif")    # built-up surface
+built_2025 <- mask(crop(built_2025, CentralAfrica_vect),CentralAfrica_vect)    # built-up surface
+
+par(mfrow = c(3, 2)) # Create a 2 x 2 plotting matrix
+par(mar = c(0, 0, 0, 0)) # Set the margin on all sides to 2
+
+
+plot(log1p(built_2000), main = "Built-up intensity (log) (2000)",
+     col = hcl.colors(100, "BuPu")
+)
+plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+plot(log1p(built_2005), main = "Built-up intensity (log) (2005)",
+     col = hcl.colors(100, "BuPu")
+)
+plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+plot(log1p(built_2010), main = "Built-up intensity (log) (2010)",
+     col = hcl.colors(100, "BuPu")
+)
+plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+plot(log1p(built_2015), main = "Built-up intensity (log) (2015)",
+     col = hcl.colors(100, "BuPu")
+)
+plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+plot(log1p(built_2020), main = "Built-up intensity (log) (2020)",
+     col = hcl.colors(100, "BuPu")
+)
+plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+plot(log1p(built_2025), main = "Built-up intensity (log) (2025)",
+     col = hcl.colors(100, "BuPu")
+)
+plot(CentralAfrica_map2,add=T,border='grey70',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+#quartz.save(file = "built-up_summary_area_every_5years.pdf", type = "pdf")
+
+
+built_up_change <- c(
+  built_2005 - built_2000,  # 2000–2005
+  built_2010 - built_2005,  # 2005–2010
+  built_2015 - built_2010,  # 2010–2015
+  built_2020 - built_2015,  # 2015–2020
+  built_2025 - built_2020   # 2020–2025
+)
+
+names(built_up_change) <- c(
+  "2000_2005",
+  "2005_2010",
+  "2010_2015",
+  "2015_2020",
+  "2020_2025"
+)
+
+built_up_change_km2 <- built_up_change / 1e6
+
+built_up_area_summary <- terra::global(
+  built_up_change_km2,
+  fun = "sum",
+  na.rm = TRUE
+)
+
+built_up_area_summary$period <- names(built_up_change_km2)
+
+built_up_area_summary
+
+built_up_change_km2 <- project(built_up_change_km2, ebola_niche,  method = "sum")
+
+built_up_ebola <- mask(
+  built_up_change_km2,
+  ebola_mask
+)
+
+built_up_summary_ebola <- terra::global(
+  built_up_ebola,
+  fun = "sum",
+  na.rm = TRUE
+)
+
+built_up_summary_ebola$period <- names(built_up_ebola)
+
+
+ggplot()+
+  theme_bw()+
+  geom_line(data=built_up_area_summary,aes(period,sum,group=1,colour='Study area'),size=1)+
+  geom_point(data=built_up_area_summary,aes(period,sum,colour='Study area'),size=3)+
+  geom_line(data=built_up_summary_ebola,aes(period,sum*10,colour='Ebola niche'),group=2,size=1)+
+  geom_point(data=built_up_summary_ebola,aes(period,sum*10,colour='Ebola niche'),size=3)+
+  scale_colour_manual(values=c('purple4','plum4'))+
+  theme(legend.position = "bottom", legend.title = element_blank())+
+  scale_y_continuous(labels=scales::comma,name="New built-up area (km²)",
+                     sec.axis = sec_axis(~ . / 10,name='Ebola niche only (suitability >= 0.7)'))+
+  xlab("Five-year period")
+
+#quartz.save(file = "built-up-change_summary_area_every_5years.pdf", type = "pdf")
+
+
+
+# -----------------------------
+# Figure 3 - plot covariates of spillover model
+# -----------------------------
+par(mfrow = c(2, 3)) # Create a 2 x 2 plotting matrix
+par(mar = c(0, 0, 0, 0)) # Set the margin on all sides to 2
+
+
+plot(ebola_niche, main = "Ebola ecological niche",
+     col = MetBrewer::met.brewer("Demuth", n = 256, type = "continuous", direction = -1)
+)
+plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+plot(log1p(built), main = "Built-up intensity (log)",
+     col = hcl.colors(100, "BuPu")
+)
+plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+plot(forest_loss, main = "Forest loss",
+     col = MetBrewer::met.brewer("Monet", n = 256, type = "continuous", direction = 1)
+)
+plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+plot(bushmeat, main = "Bushmeat activity",
+     col = MetBrewer::met.brewer("Tam", n = 256, type = "continuous", direction = -1)
+)
+plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+
+plot(mining_risk, main = "Mining proximity",
+     col = MetBrewer::met.brewer("Paquin", n = 256, type = "continuous", direction = -1)
+)
+plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+
+plot(conflict_exposure, main = "Conflict exposure",
+     col = MetBrewer::met.brewer("Troy", n = 256, type = "continuous", direction = -1)
+)
+plot(CentralAfrica_map2,add=T,border='grey50',col=NA,lwd=0.1)
+plot(CentralAfrica_map1,add=T,border='grey90',col=NA)
+
+
+#quartz.save(file = "covariates_maps_FIG3_updatedebolaniche.pdf", type = "pdf")
+
+
+
+
+
+
+# -----------------------------
+# Figure 5 - Comput continental risk maps - reload rasters
 # -----------------------------
 
 ################# Updated vs published dataset Ebola maps
