@@ -24,7 +24,7 @@ The analysis integrates ecological habitat suitability with key anthropogenic ri
 
 ## Citation
 
-If you use this code or adapt the workflow, please cite the associated publication/pre-print:
+If you use this code, output data or adapt the workflow, please cite the associated publication/pre-print:
 
 > *Integrating ecological and anthropogenic risk identifies emerging Ebola spillover hotspots
 Monika Moir, Houriiyah Tegally, Desalew M Moges, Graeme Dor, Jenicca Poongavanan, Cheryl Baxter, Richard John Lessells, Moritz U. G. Kraemer, Ciara Judge, Bernardo Gutierrez, Dav M Ebengo, Eddy Kinganda Lusamaki, Mbala Placide, Jean-Jacques Muyembe-Tamfum, Jean Bisimwa Nachega, Tulio de Oliveira, Carla N. Mavian
