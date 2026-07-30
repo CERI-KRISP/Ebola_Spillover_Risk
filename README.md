@@ -47,7 +47,7 @@ The analysis integrates ecological habitat suitability with key anthropogenic ri
 
 ## Repository structure
 
-* `data/` — Input and output spatial and occurrence datasets for the spillover model
+* `Spillover_risk_mapping/` — Codes, input and output spatial and occurrence datasets for the spillover model
 * `Bat_models/` — Data and codes for the Bat habitat suitability model
 * `Ebola_models/` — Data and codes for the orthoebolavirus habitat suitability model
 * `Figures/` — Final publication visualizations
